@@ -1,0 +1,9 @@
+services:
+  reportes:
+    build: .
+    container_name: inventario_reportes
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
