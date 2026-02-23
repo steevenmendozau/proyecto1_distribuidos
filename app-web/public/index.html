@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventario</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-secondary {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #1e7e34;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f1f1f1;
+        }
+        .stock-bajo {
+            background-color: #ffcccc;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Sistema de Inventario</h1>
+
+    <h2>Crear Producto</h2>
+
+    <form onsubmit="crearProducto(event)">
+        <div class="form-grid">
+            <input type="text" id="nombre" placeholder="Nombre" required>
+            <input type="number" id="precio" placeholder="Precio" required>
+            <input type="number" id="stock" placeholder="Stock" required>
+            <input type="number" id="categoria" placeholder="Categoria ID" required>
+            <input type="number" id="proveedor" placeholder="Proveedor ID" required>
+            <input type="number" id="stock_minimo" placeholder="Stock Mínimo" required>
+        </div>
+
+        <button type="submit" class="btn-primary">Crear Producto</button>
+        <button type="button" onclick="cargarProductos()" class="btn-secondary">
+            Cargar Productos
+        </button>
+    </form>
+    <input
+            type="text"
+            id="busquedaNombre"
+            placeholder="Buscar por nombre"
+            onkeyup="cargarProductos()"
+    />
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Categoría</th>
+            <th>Proveedor</th>
+            <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody id="tablaProductos"></tbody>
+    </table>
+
+</div>
+
+<script>
+    let editandoId = null;
+    async function cargarProductos() {
+        try {
+            const response = await fetch('/productos');
+            const productos = await response.json();
+
+            const tabla = document.getElementById('tablaProductos');
+            tabla.innerHTML = '';
+
+            const textoBusqueda = document
+                .getElementById('busquedaNombre')
+                .value
+                .toLowerCase();
+
+            productos.forEach(producto => {
+
+                const alertaStock = producto.stock_actual <= producto.stock_minimo
+                    ? 'style="background-color:#ffb3b3;"'
+                    : '';
+
+                const fila = `
+<tr ${alertaStock}>
+    <td>${producto.id}</td>
+    <td>${producto.nombre}</td>
+    <td>${producto.precio_unitario}</td>
+    <td>${producto.stock_actual}</td>
+    <td>${producto.categoria_nombre}</td>
+    <td>${producto.proveedor_nombre}</td>
+    <td>
+        <button onclick="cargarProductoEditar(
+            ${producto.id},
+            '${producto.nombre}',
+            ${producto.precio_unitario},
+            ${producto.stock_actual},
+            ${producto.stock_minimo || 0},
+            ${producto.categoria_id},
+            ${producto.proveedor_id}
+        )">
+            Editar
+        </button>
+
+        <button onclick="eliminarProducto(${producto.id})">
+            Eliminar
+        </button>
+    </td>
+</tr>`;
+
+                tabla.innerHTML += fila;
+            });
+
+        } catch (error) {
+            alert("No se pudieron cargar los productos");
+        }
+    }
+
+    async function crearProducto(event) {
+        event.preventDefault();
+
+        const producto = {
+            nombre: document.getElementById('nombre').value,
+            descripcion: "",
+            precio_unitario: parseFloat(document.getElementById('precio').value),
+            stock_actual: parseInt(document.getElementById('stock').value),
+            stock_minimo: parseInt(document.getElementById('stock_minimo').value),
+            categoria_id: parseInt(document.getElementById('categoria').value),
+            proveedor_id: parseInt(document.getElementById('proveedor').value)
+        };
+
+        try {
+
+            let url = "/productos";
+            let method = "POST";
+
+            if (editandoId !== null) {
+                url = `/productos/${editandoId}`;
+                method = "PUT";
+            }
+
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(producto)
+            });
+
+            if (!response.ok) throw new Error();
+
+            alert(editandoId ? "Producto actualizado" : "Producto creado");
+
+            editandoId = null;
+            event.target.reset();
+            cargarProductos();
+
+        } catch (error) {
+            alert("Error (normal si aún no hay base)");
+        }
+    }
+
+    async function eliminarProducto(id) {
+        if (!confirm("¿Eliminar producto?")) return;
+
+        try {
+            const response = await fetch(`/productos/${id}`, {
+                method: "DELETE"
+            });
+
+            if (!response.ok) throw new Error();
+
+            alert("Producto eliminado");
+            cargarProductos();
+
+        } catch (error) {
+            alert("Error eliminando (normal si no hay base)");
+        }
+    }
+    function cargarProductoEditar(
+        id,
+        nombre,
+        precio,
+        stock,
+        stock_minimo,
+        categoria,
+        proveedor
+    ) {
+        editandoId = id;
+
+        document.getElementById('nombre').value = nombre;
+        document.getElementById('precio').value = precio;
+        document.getElementById('stock').value = stock;
+        document.getElementById('stock_minimo').value = stock_minimo;
+        document.getElementById('categoria').value = categoria;
+        document.getElementById('proveedor').value = proveedor;
+
+        window.scrollTo(0, 0);
+    }
+</script>
+
+</body>
+</html>
