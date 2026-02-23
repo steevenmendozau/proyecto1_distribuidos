@@ -2,269 +2,697 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Inventario</title>
-
+    <title>Sistema de Inventario</title>
     <style>
+        * { box-sizing: border-box; }
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f6f9;
             margin: 0;
-            padding: 40px;
+            padding: 0;
         }
-
-        h1 {
-            text-align: center;
+        nav {
+            background-color: #2c3e50;
+            display: flex;
+            padding: 0;
         }
-
+        nav button {
+            background: none;
+            border: none;
+            color: #bdc3c7;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        nav button:hover { background-color: #34495e; color: white; }
+        nav button.active { background-color: #007bff; color: white; }
         .container {
-            max-width: 1000px;
-            margin: auto;
+            max-width: 1100px;
+            margin: 30px auto;
             background: white;
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-
+        h1 { text-align: center; margin-top: 0; }
+        h2 { margin-top: 0; color: #2c3e50; }
+        .seccion { display: none; }
+        .seccion.activa { display: block; }
         .form-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 15px;
         }
-
-        input {
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        input, select, textarea {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            font-size: 14px;
+            width: 100%;
         }
-
+        textarea { resize: vertical; min-height: 40px; }
         button {
-            padding: 10px 15px;
+            padding: 10px 18px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 14px;
         }
-
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
-
-        .btn-secondary {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: #1e7e34;
-        }
-
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-secondary { background-color: #28a745; color: white; }
+        .btn-secondary:hover { background-color: #1e7e34; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-danger:hover { background-color: #a71d2a; }
+        .btn-warning { background-color: #ffc107; color: #333; }
+        .btn-warning:hover { background-color: #d39e00; }
+        .btn-info { background-color: #17a2b8; color: white; }
+        .btn-info:hover { background-color: #117a8b; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn-group { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .filtros { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: end; }
+        .filtros > div { display: flex; flex-direction: column; gap: 4px; }
+        .filtros label { font-size: 12px; color: #666; font-weight: bold; }
+        .filtros input, .filtros select { width: auto; min-width: 150px; }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 15px;
         }
-
         th, td {
             padding: 10px;
             border-bottom: 1px solid #ddd;
             text-align: left;
+            font-size: 14px;
         }
-
-        th {
-            background-color: #f1f1f1;
-        }
-        .stock-bajo {
-            background-color: #ffcccc;
-        }
+        th { background-color: #f1f1f1; font-weight: bold; }
+        .stock-bajo { background-color: #ffb3b3; }
+        .badge-entrada { background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 3px; font-size: 12px; }
+        .badge-salida { background: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 3px; font-size: 12px; }
+        #reporteResultado table { margin-top: 10px; }
+        .cancelar-edicion { display: none; }
     </style>
 </head>
 <body>
 
+<nav>
+    <button class="active" onclick="mostrarSeccion('productos', this)">Productos</button>
+    <button onclick="mostrarSeccion('categorias', this)">Categorias</button>
+    <button onclick="mostrarSeccion('proveedores', this)">Proveedores</button>
+    <button onclick="mostrarSeccion('movimientos', this)">Movimientos</button>
+    <button onclick="mostrarSeccion('reportes', this)">Reportes</button>
+</nav>
+
 <div class="container">
 
-    <h1>Sistema de Inventario</h1>
+<!-- ==================== PRODUCTOS ==================== -->
+<div id="sec-productos" class="seccion activa">
+    <h2>Productos</h2>
 
-    <h2>Crear Producto</h2>
-
-    <form onsubmit="crearProducto(event)">
+    <form id="formProducto" onsubmit="guardarProducto(event)">
         <div class="form-grid">
-            <input type="text" id="nombre" placeholder="Nombre" required>
-            <input type="number" id="precio" placeholder="Precio" required>
-            <input type="number" id="stock" placeholder="Stock" required>
-            <input type="number" id="categoria" placeholder="Categoria ID" required>
-            <input type="number" id="proveedor" placeholder="Proveedor ID" required>
-            <input type="number" id="stock_minimo" placeholder="Stock Mínimo" required>
+            <input type="text" id="prod_nombre" placeholder="Nombre" required>
+            <input type="text" id="prod_descripcion" placeholder="Descripcion">
+            <input type="number" step="0.01" id="prod_precio" placeholder="Precio unitario" required>
+            <input type="number" id="prod_stock" placeholder="Stock actual" required>
+            <input type="number" id="prod_stock_min" placeholder="Stock minimo" required>
+            <select id="prod_categoria" required><option value="">-- Categoria --</option></select>
         </div>
-
-        <button type="submit" class="btn-primary">Crear Producto</button>
-        <button type="button" onclick="cargarProductos()" class="btn-secondary">
-            Cargar Productos
-        </button>
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+            <select id="prod_proveedor" required style="width:auto;min-width:200px;"><option value="">-- Proveedor --</option></select>
+            <button type="submit" class="btn-primary" id="btnGuardarProd">Crear Producto</button>
+            <button type="button" class="btn-warning cancelar-edicion" id="btnCancelarProd" onclick="cancelarEdicionProducto()">Cancelar</button>
+        </div>
     </form>
-    <input
-            type="text"
-            id="busquedaNombre"
-            placeholder="Buscar por nombre"
-            onkeyup="cargarProductos()"
-    />
+
+    <div class="filtros">
+        <div>
+            <label>Buscar</label>
+            <input type="text" id="filtro_buscar" placeholder="Nombre del producto" oninput="cargarProductos()">
+        </div>
+        <div>
+            <label>Categoria</label>
+            <select id="filtro_categoria" onchange="cargarProductos()"><option value="">Todas</option></select>
+        </div>
+        <div>
+            <label>Proveedor</label>
+            <select id="filtro_proveedor" onchange="cargarProductos()"><option value="">Todos</option></select>
+        </div>
+    </div>
+
     <table>
         <thead>
         <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Precio</th>
-            <th>Stock</th>
-            <th>Categoría</th>
-            <th>Proveedor</th>
-            <th>Acciones</th>
+            <th>ID</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Min</th><th>Categoria</th><th>Proveedor</th><th>Acciones</th>
         </tr>
         </thead>
         <tbody id="tablaProductos"></tbody>
     </table>
+</div>
+
+<!-- ==================== CATEGORIAS ==================== -->
+<div id="sec-categorias" class="seccion">
+    <h2>Categorias</h2>
+
+    <form id="formCategoria" onsubmit="guardarCategoria(event)">
+        <div class="form-grid-2">
+            <input type="text" id="cat_nombre" placeholder="Nombre" required>
+            <input type="text" id="cat_descripcion" placeholder="Descripcion">
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+            <button type="submit" class="btn-primary" id="btnGuardarCat">Crear Categoria</button>
+            <button type="button" class="btn-warning cancelar-edicion" id="btnCancelarCat" onclick="cancelarEdicionCategoria()">Cancelar</button>
+        </div>
+    </form>
+
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Nombre</th><th>Descripcion</th><th>Acciones</th></tr>
+        </thead>
+        <tbody id="tablaCategorias"></tbody>
+    </table>
+</div>
+
+<!-- ==================== PROVEEDORES ==================== -->
+<div id="sec-proveedores" class="seccion">
+    <h2>Proveedores</h2>
+
+    <form id="formProveedor" onsubmit="guardarProveedor(event)">
+        <div class="form-grid">
+            <input type="text" id="prov_nombre" placeholder="Nombre" required>
+            <input type="text" id="prov_contacto" placeholder="Contacto">
+            <input type="text" id="prov_telefono" placeholder="Telefono">
+            <input type="email" id="prov_email" placeholder="Email">
+            <input type="text" id="prov_direccion" placeholder="Direccion" style="grid-column: span 2;">
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+            <button type="submit" class="btn-primary" id="btnGuardarProv">Crear Proveedor</button>
+            <button type="button" class="btn-warning cancelar-edicion" id="btnCancelarProv" onclick="cancelarEdicionProveedor()">Cancelar</button>
+        </div>
+    </form>
+
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Nombre</th><th>Contacto</th><th>Telefono</th><th>Email</th><th>Direccion</th><th>Acciones</th></tr>
+        </thead>
+        <tbody id="tablaProveedores"></tbody>
+    </table>
+</div>
+
+<!-- ==================== MOVIMIENTOS ==================== -->
+<div id="sec-movimientos" class="seccion">
+    <h2>Registrar Movimiento</h2>
+
+    <form id="formMovimiento" onsubmit="registrarMovimiento(event)">
+        <div class="form-grid">
+            <select id="mov_producto" required><option value="">-- Producto --</option></select>
+            <select id="mov_tipo" required>
+                <option value="">-- Tipo --</option>
+                <option value="entrada">Entrada</option>
+                <option value="salida">Salida</option>
+            </select>
+            <input type="number" id="mov_cantidad" placeholder="Cantidad" min="1" required>
+            <select id="mov_proveedor"><option value="">-- Proveedor (opcional) --</option></select>
+            <input type="text" id="mov_motivo" placeholder="Motivo">
+            <input type="text" id="mov_observacion" placeholder="Observacion">
+        </div>
+        <button type="submit" class="btn-primary">Registrar Movimiento</button>
+    </form>
+
+    <h2 style="margin-top:30px;">Historial de Movimientos</h2>
+
+    <div class="filtros">
+        <div>
+            <label>Fecha inicio</label>
+            <input type="date" id="filtro_mov_inicio" onchange="cargarMovimientos()">
+        </div>
+        <div>
+            <label>Fecha fin</label>
+            <input type="date" id="filtro_mov_fin" onchange="cargarMovimientos()">
+        </div>
+        <div>
+            <label>Tipo</label>
+            <select id="filtro_mov_tipo" onchange="cargarMovimientos()">
+                <option value="">Todos</option>
+                <option value="entrada">Entrada</option>
+                <option value="salida">Salida</option>
+            </select>
+        </div>
+        <div>
+            <label>Producto</label>
+            <select id="filtro_mov_producto" onchange="cargarMovimientos()"><option value="">Todos</option></select>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Fecha</th><th>Proveedor</th><th>Motivo</th><th>Observacion</th></tr>
+        </thead>
+        <tbody id="tablaMovimientos"></tbody>
+    </table>
+</div>
+
+<!-- ==================== REPORTES ==================== -->
+<div id="sec-reportes" class="seccion">
+    <h2>Reportes</h2>
+
+    <div class="filtros">
+        <div>
+            <label>Fecha inicio</label>
+            <input type="date" id="rep_fecha_inicio">
+        </div>
+        <div>
+            <label>Fecha fin</label>
+            <input type="date" id="rep_fecha_fin">
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-primary" onclick="cargarReporte('stock-bajo')">Stock Bajo</button>
+        <button class="btn-primary" onclick="cargarReporte('productos-mas-movidos')">Mas Movidos</button>
+        <button class="btn-primary" onclick="cargarReporte('valor-inventario')">Valor Inventario</button>
+        <button class="btn-primary" onclick="cargarReporte('movimientos')">Movimientos</button>
+        <button class="btn-primary" onclick="cargarReporte('resumen-proveedores')">Resumen Proveedores</button>
+    </div>
+
+    <div id="reporteExportar" style="display:none;" class="btn-group">
+        <button class="btn-info" onclick="descargarReporte('pdf')">Descargar PDF</button>
+        <button class="btn-secondary" onclick="descargarReporte('csv')">Descargar CSV</button>
+    </div>
+
+    <div id="reporteResultado"></div>
+</div>
 
 </div>
 
 <script>
-    let editandoId = null;
-    async function cargarProductos() {
-        try {
-            const response = await fetch('/productos');
-            const productos = await response.json();
+// ==================== NAVEGACION ====================
+let editandoProdId = null;
+let editandoCatId = null;
+let editandoProvId = null;
+let reporteActual = null;
+let reporteParams = '';
 
-            const tabla = document.getElementById('tablaProductos');
-            tabla.innerHTML = '';
+function mostrarSeccion(nombre, btn) {
+    document.querySelectorAll('.seccion').forEach(s => s.classList.remove('activa'));
+    document.getElementById('sec-' + nombre).classList.add('activa');
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
 
-            const textoBusqueda = document
-                .getElementById('busquedaNombre')
-                .value
-                .toLowerCase();
+    if (nombre === 'productos') { cargarSelectsCatalogos(); cargarProductos(); }
+    if (nombre === 'categorias') cargarCategorias();
+    if (nombre === 'proveedores') cargarProveedores();
+    if (nombre === 'movimientos') { cargarSelectsMovimientos(); cargarMovimientos(); }
+}
 
-            productos.forEach(producto => {
+// ==================== UTILIDADES ====================
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-                const alertaStock = producto.stock_actual <= producto.stock_minimo
-                    ? 'style="background-color:#ffb3b3;"'
-                    : '';
+// ==================== CATEGORIAS ====================
+async function cargarCategorias() {
+    try {
+        const res = await fetch('/categorias');
+        const cats = await res.json();
+        const tbody = document.getElementById('tablaCategorias');
+        tbody.innerHTML = cats.map(c => `
+            <tr>
+                <td>${c.id}</td>
+                <td>${escapeHtml(c.nombre)}</td>
+                <td>${escapeHtml(c.descripcion)}</td>
+                <td>
+                    <button class="btn-warning btn-sm" onclick="editarCategoria(${c.id}, '${escapeHtml(c.nombre)}', '${escapeHtml(c.descripcion)}')">Editar</button>
+                    <button class="btn-danger btn-sm" onclick="eliminarCategoria(${c.id})">Eliminar</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error(e); }
+}
 
-                const fila = `
-<tr ${alertaStock}>
-    <td>${producto.id}</td>
-    <td>${producto.nombre}</td>
-    <td>${producto.precio_unitario}</td>
-    <td>${producto.stock_actual}</td>
-    <td>${producto.categoria_nombre}</td>
-    <td>${producto.proveedor_nombre}</td>
-    <td>
-        <button onclick="cargarProductoEditar(
-            ${producto.id},
-            '${producto.nombre}',
-            ${producto.precio_unitario},
-            ${producto.stock_actual},
-            ${producto.stock_minimo || 0},
-            ${producto.categoria_id},
-            ${producto.proveedor_id}
-        )">
-            Editar
-        </button>
+async function guardarCategoria(event) {
+    event.preventDefault();
+    const data = {
+        nombre: document.getElementById('cat_nombre').value,
+        descripcion: document.getElementById('cat_descripcion').value
+    };
+    try {
+        const url = editandoCatId ? `/categorias/${editandoCatId}` : '/categorias';
+        const method = editandoCatId ? 'PUT' : 'POST';
+        const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+        if (!res.ok) throw new Error();
+        cancelarEdicionCategoria();
+        cargarCategorias();
+    } catch (e) { alert('Error guardando categoria'); }
+}
 
-        <button onclick="eliminarProducto(${producto.id})">
-            Eliminar
-        </button>
-    </td>
-</tr>`;
+function editarCategoria(id, nombre, descripcion) {
+    editandoCatId = id;
+    document.getElementById('cat_nombre').value = nombre;
+    document.getElementById('cat_descripcion').value = descripcion;
+    document.getElementById('btnGuardarCat').textContent = 'Actualizar';
+    document.getElementById('btnCancelarCat').style.display = 'inline-block';
+}
 
-                tabla.innerHTML += fila;
-            });
+function cancelarEdicionCategoria() {
+    editandoCatId = null;
+    document.getElementById('formCategoria').reset();
+    document.getElementById('btnGuardarCat').textContent = 'Crear Categoria';
+    document.getElementById('btnCancelarCat').style.display = 'none';
+}
 
-        } catch (error) {
-            alert("No se pudieron cargar los productos");
+async function eliminarCategoria(id) {
+    if (!confirm('Eliminar esta categoria?')) return;
+    try {
+        const res = await fetch(`/categorias/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        cargarCategorias();
+    } catch (e) { alert('Error eliminando (puede tener productos asociados)'); }
+}
+
+// ==================== PROVEEDORES ====================
+async function cargarProveedores() {
+    try {
+        const res = await fetch('/proveedores');
+        const provs = await res.json();
+        const tbody = document.getElementById('tablaProveedores');
+        tbody.innerHTML = provs.map(p => `
+            <tr>
+                <td>${p.id}</td>
+                <td>${escapeHtml(p.nombre)}</td>
+                <td>${escapeHtml(p.contacto)}</td>
+                <td>${escapeHtml(p.telefono)}</td>
+                <td>${escapeHtml(p.email)}</td>
+                <td>${escapeHtml(p.direccion)}</td>
+                <td>
+                    <button class="btn-warning btn-sm" onclick='editarProveedor(${JSON.stringify(p)})'>Editar</button>
+                    <button class="btn-danger btn-sm" onclick="eliminarProveedor(${p.id})">Eliminar</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error(e); }
+}
+
+async function guardarProveedor(event) {
+    event.preventDefault();
+    const data = {
+        nombre: document.getElementById('prov_nombre').value,
+        contacto: document.getElementById('prov_contacto').value,
+        telefono: document.getElementById('prov_telefono').value,
+        email: document.getElementById('prov_email').value,
+        direccion: document.getElementById('prov_direccion').value
+    };
+    try {
+        const url = editandoProvId ? `/proveedores/${editandoProvId}` : '/proveedores';
+        const method = editandoProvId ? 'PUT' : 'POST';
+        const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+        if (!res.ok) throw new Error();
+        cancelarEdicionProveedor();
+        cargarProveedores();
+    } catch (e) { alert('Error guardando proveedor'); }
+}
+
+function editarProveedor(p) {
+    editandoProvId = p.id;
+    document.getElementById('prov_nombre').value = p.nombre || '';
+    document.getElementById('prov_contacto').value = p.contacto || '';
+    document.getElementById('prov_telefono').value = p.telefono || '';
+    document.getElementById('prov_email').value = p.email || '';
+    document.getElementById('prov_direccion').value = p.direccion || '';
+    document.getElementById('btnGuardarProv').textContent = 'Actualizar';
+    document.getElementById('btnCancelarProv').style.display = 'inline-block';
+}
+
+function cancelarEdicionProveedor() {
+    editandoProvId = null;
+    document.getElementById('formProveedor').reset();
+    document.getElementById('btnGuardarProv').textContent = 'Crear Proveedor';
+    document.getElementById('btnCancelarProv').style.display = 'none';
+}
+
+async function eliminarProveedor(id) {
+    if (!confirm('Eliminar este proveedor?')) return;
+    try {
+        const res = await fetch(`/proveedores/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        cargarProveedores();
+    } catch (e) { alert('Error eliminando (puede tener productos asociados)'); }
+}
+
+// ==================== PRODUCTOS ====================
+async function cargarSelectsCatalogos() {
+    try {
+        const [cats, provs] = await Promise.all([
+            fetch('/categorias').then(r => r.json()),
+            fetch('/proveedores').then(r => r.json())
+        ]);
+
+        const selCat = document.getElementById('prod_categoria');
+        const filCat = document.getElementById('filtro_categoria');
+        selCat.innerHTML = '<option value="">-- Categoria --</option>' + cats.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`).join('');
+        filCat.innerHTML = '<option value="">Todas</option>' + cats.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`).join('');
+
+        const selProv = document.getElementById('prod_proveedor');
+        const filProv = document.getElementById('filtro_proveedor');
+        selProv.innerHTML = '<option value="">-- Proveedor --</option>' + provs.map(p => `<option value="${p.id}">${escapeHtml(p.nombre)}</option>`).join('');
+        filProv.innerHTML = '<option value="">Todos</option>' + provs.map(p => `<option value="${p.id}">${escapeHtml(p.nombre)}</option>`).join('');
+    } catch (e) { console.error(e); }
+}
+
+async function cargarProductos() {
+    try {
+        const buscar = document.getElementById('filtro_buscar').value;
+        const cat = document.getElementById('filtro_categoria').value;
+        const prov = document.getElementById('filtro_proveedor').value;
+
+        const params = new URLSearchParams();
+        if (buscar) params.set('buscar', buscar);
+        if (cat) params.set('categoria_id', cat);
+        if (prov) params.set('proveedor_id', prov);
+
+        const res = await fetch('/productos?' + params.toString());
+        const productos = await res.json();
+        const tbody = document.getElementById('tablaProductos');
+
+        tbody.innerHTML = productos.map(p => {
+            const alerta = p.stock_actual <= p.stock_minimo ? 'class="stock-bajo"' : '';
+            return `
+            <tr ${alerta}>
+                <td>${p.id}</td>
+                <td>${escapeHtml(p.nombre)}</td>
+                <td>$${Number(p.precio_unitario).toFixed(2)}</td>
+                <td>${p.stock_actual}</td>
+                <td>${p.stock_minimo}</td>
+                <td>${escapeHtml(p.categoria_nombre)}</td>
+                <td>${escapeHtml(p.proveedor_nombre)}</td>
+                <td>
+                    <button class="btn-warning btn-sm" onclick='editarProducto(${JSON.stringify(p)})'>Editar</button>
+                    <button class="btn-danger btn-sm" onclick="eliminarProducto(${p.id})">Eliminar</button>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch (e) { console.error(e); }
+}
+
+async function guardarProducto(event) {
+    event.preventDefault();
+    const data = {
+        nombre: document.getElementById('prod_nombre').value,
+        descripcion: document.getElementById('prod_descripcion').value,
+        precio_unitario: parseFloat(document.getElementById('prod_precio').value),
+        stock_actual: parseInt(document.getElementById('prod_stock').value),
+        stock_minimo: parseInt(document.getElementById('prod_stock_min').value),
+        categoria_id: parseInt(document.getElementById('prod_categoria').value),
+        proveedor_id: parseInt(document.getElementById('prod_proveedor').value)
+    };
+    try {
+        const url = editandoProdId ? `/productos/${editandoProdId}` : '/productos';
+        const method = editandoProdId ? 'PUT' : 'POST';
+        const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+        if (!res.ok) throw new Error();
+        cancelarEdicionProducto();
+        cargarProductos();
+    } catch (e) { alert('Error guardando producto'); }
+}
+
+function editarProducto(p) {
+    editandoProdId = p.id;
+    document.getElementById('prod_nombre').value = p.nombre || '';
+    document.getElementById('prod_descripcion').value = p.descripcion || '';
+    document.getElementById('prod_precio').value = p.precio_unitario;
+    document.getElementById('prod_stock').value = p.stock_actual;
+    document.getElementById('prod_stock_min').value = p.stock_minimo;
+    document.getElementById('prod_categoria').value = p.categoria_id;
+    document.getElementById('prod_proveedor').value = p.proveedor_id;
+    document.getElementById('btnGuardarProd').textContent = 'Actualizar';
+    document.getElementById('btnCancelarProd').style.display = 'inline-block';
+    window.scrollTo(0, 0);
+}
+
+function cancelarEdicionProducto() {
+    editandoProdId = null;
+    document.getElementById('formProducto').reset();
+    document.getElementById('btnGuardarProd').textContent = 'Crear Producto';
+    document.getElementById('btnCancelarProd').style.display = 'none';
+}
+
+async function eliminarProducto(id) {
+    if (!confirm('Eliminar este producto?')) return;
+    try {
+        const res = await fetch(`/productos/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        cargarProductos();
+    } catch (e) { alert('Error eliminando producto'); }
+}
+
+// ==================== MOVIMIENTOS ====================
+async function cargarSelectsMovimientos() {
+    try {
+        const [prods, provs] = await Promise.all([
+            fetch('/productos').then(r => r.json()),
+            fetch('/proveedores').then(r => r.json())
+        ]);
+
+        const selProd = document.getElementById('mov_producto');
+        selProd.innerHTML = '<option value="">-- Producto --</option>' + prods.map(p => `<option value="${p.id}">${escapeHtml(p.nombre)} (Stock: ${p.stock_actual})</option>`).join('');
+
+        const selProv = document.getElementById('mov_proveedor');
+        selProv.innerHTML = '<option value="">-- Proveedor (opcional) --</option>' + provs.map(p => `<option value="${p.id}">${escapeHtml(p.nombre)}</option>`).join('');
+
+        const filProd = document.getElementById('filtro_mov_producto');
+        filProd.innerHTML = '<option value="">Todos</option>' + prods.map(p => `<option value="${p.id}">${escapeHtml(p.nombre)}</option>`).join('');
+    } catch (e) { console.error(e); }
+}
+
+async function cargarMovimientos() {
+    try {
+        const params = new URLSearchParams();
+        const inicio = document.getElementById('filtro_mov_inicio').value;
+        const fin = document.getElementById('filtro_mov_fin').value;
+        const tipo = document.getElementById('filtro_mov_tipo').value;
+        const prod = document.getElementById('filtro_mov_producto').value;
+
+        if (inicio) params.set('fecha_inicio', inicio);
+        if (fin) params.set('fecha_fin', fin + 'T23:59:59');
+        if (tipo) params.set('tipo', tipo);
+        if (prod) params.set('producto_id', prod);
+
+        const res = await fetch('/movimientos?' + params.toString());
+        const movs = await res.json();
+        const tbody = document.getElementById('tablaMovimientos');
+
+        tbody.innerHTML = movs.map(m => {
+            const badge = m.tipo === 'entrada' ? 'badge-entrada' : 'badge-salida';
+            const fecha = new Date(m.fecha).toLocaleDateString('es-EC');
+            return `
+            <tr>
+                <td>${m.id}</td>
+                <td>${escapeHtml(m.producto_nombre)}</td>
+                <td><span class="${badge}">${m.tipo}</span></td>
+                <td>${m.cantidad}</td>
+                <td>${fecha}</td>
+                <td>${escapeHtml(m.proveedor_nombre) || '-'}</td>
+                <td>${escapeHtml(m.motivo) || '-'}</td>
+                <td>${escapeHtml(m.observacion) || '-'}</td>
+            </tr>`;
+        }).join('');
+    } catch (e) { console.error(e); }
+}
+
+async function registrarMovimiento(event) {
+    event.preventDefault();
+    const data = {
+        producto_id: parseInt(document.getElementById('mov_producto').value),
+        tipo: document.getElementById('mov_tipo').value,
+        cantidad: parseInt(document.getElementById('mov_cantidad').value),
+        proveedor_id: document.getElementById('mov_proveedor').value || null,
+        motivo: document.getElementById('mov_motivo').value,
+        observacion: document.getElementById('mov_observacion').value
+    };
+    if (data.proveedor_id) data.proveedor_id = parseInt(data.proveedor_id);
+
+    try {
+        const res = await fetch('/movimientos', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error();
+        alert('Movimiento registrado. Stock actualizado.');
+        document.getElementById('formMovimiento').reset();
+        cargarMovimientos();
+        cargarSelectsMovimientos();
+    } catch (e) { alert('Error registrando movimiento'); }
+}
+
+// ==================== REPORTES ====================
+async function cargarReporte(nombre) {
+    reporteActual = nombre;
+    const params = new URLSearchParams();
+    const inicio = document.getElementById('rep_fecha_inicio').value;
+    const fin = document.getElementById('rep_fecha_fin').value;
+
+    if (inicio) params.set('fecha_inicio', inicio);
+    if (fin) params.set('fecha_fin', fin);
+
+    reporteParams = params.toString();
+
+    try {
+        const res = await fetch(`/reportes/${nombre}?${reporteParams}`);
+        const data = await res.json();
+        const container = document.getElementById('reporteResultado');
+
+        let rows = Array.isArray(data) ? data : (data.movimientos || []);
+
+        if (rows.length === 0) {
+            container.innerHTML = '<p>No se encontraron datos para este reporte.</p>';
+            document.getElementById('reporteExportar').style.display = 'none';
+            return;
         }
-    }
 
-    async function crearProducto(event) {
-        event.preventDefault();
-
-        const producto = {
-            nombre: document.getElementById('nombre').value,
-            descripcion: "",
-            precio_unitario: parseFloat(document.getElementById('precio').value),
-            stock_actual: parseInt(document.getElementById('stock').value),
-            stock_minimo: parseInt(document.getElementById('stock_minimo').value),
-            categoria_id: parseInt(document.getElementById('categoria').value),
-            proveedor_id: parseInt(document.getElementById('proveedor').value)
-        };
-
-        try {
-
-            let url = "/productos";
-            let method = "POST";
-
-            if (editandoId !== null) {
-                url = `/productos/${editandoId}`;
-                method = "PUT";
-            }
-
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(producto)
-            });
-
-            if (!response.ok) throw new Error();
-
-            alert(editandoId ? "Producto actualizado" : "Producto creado");
-
-            editandoId = null;
-            event.target.reset();
-            cargarProductos();
-
-        } catch (error) {
-            alert("Error (normal si aún no hay base)");
+        let extra = '';
+        if (data.total_entradas !== undefined) {
+            extra = `<p><strong>Total entradas:</strong> ${data.total_entradas} | <strong>Total salidas:</strong> ${data.total_salidas}</p>`;
         }
+
+        const headers = Object.keys(rows[0]);
+        let html = extra + '<table><thead><tr>' + headers.map(h => `<th>${escapeHtml(h)}</th>`).join('') + '</tr></thead><tbody>';
+        rows.forEach(row => {
+            html += '<tr>' + headers.map(h => `<td>${escapeHtml(row[h])}</td>`).join('') + '</tr>';
+        });
+        html += '</tbody></table>';
+
+        container.innerHTML = html;
+        document.getElementById('reporteExportar').style.display = 'flex';
+    } catch (e) {
+        document.getElementById('reporteResultado').innerHTML = '<p>Error cargando reporte. Verifique que el servicio de reportes este activo.</p>';
+        document.getElementById('reporteExportar').style.display = 'none';
     }
+}
 
-    async function eliminarProducto(id) {
-        if (!confirm("¿Eliminar producto?")) return;
+function descargarReporte(formato) {
+    if (!reporteActual) return;
+    const params = new URLSearchParams(reporteParams);
+    params.set('formato', formato);
+    window.open(`/reportes/${reporteActual}?${params.toString()}`, '_blank');
+}
 
-        try {
-            const response = await fetch(`/productos/${id}`, {
-                method: "DELETE"
-            });
-
-            if (!response.ok) throw new Error();
-
-            alert("Producto eliminado");
-            cargarProductos();
-
-        } catch (error) {
-            alert("Error eliminando (normal si no hay base)");
-        }
-    }
-    function cargarProductoEditar(
-        id,
-        nombre,
-        precio,
-        stock,
-        stock_minimo,
-        categoria,
-        proveedor
-    ) {
-        editandoId = id;
-
-        document.getElementById('nombre').value = nombre;
-        document.getElementById('precio').value = precio;
-        document.getElementById('stock').value = stock;
-        document.getElementById('stock_minimo').value = stock_minimo;
-        document.getElementById('categoria').value = categoria;
-        document.getElementById('proveedor').value = proveedor;
-
-        window.scrollTo(0, 0);
-    }
+// ==================== CARGA INICIAL ====================
+window.addEventListener('DOMContentLoaded', () => {
+    cargarSelectsCatalogos();
+    cargarProductos();
+});
 </script>
 
 </body>
